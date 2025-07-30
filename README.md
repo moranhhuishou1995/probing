@@ -233,7 +233,7 @@ make test
 PROBE=1 python examples/test_probing.py
 
 # Advanced testing with variable tracking
-PROBE_TORCH_EXPRS="loss@train,acc1@train" PROBE=1 python examples/imagenet.py
+PROBE_TORCH_EXPRS="loss@train,acc1@train" PROBING=1 python examples/imagenet.py
 ```
 
 ### Project Structure
