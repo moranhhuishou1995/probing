@@ -18,4 +18,28 @@ fn setup() {
         nix::libc::SIGUSR2,
         crate::features::stack_tracer::backtrace_signal_handler,
     );
+    register_signal_handler(
+        nix::libc::SIGUSR1,
+        crate::features::stack_tracer::exit_signal_handler,
+    );
+    register_signal_handler(
+        nix::libc::SIGABRT,
+        crate::features::stack_tracer::exit_signal_handler,
+    );
+    register_signal_handler(
+        nix::libc::SIGFPE,
+        crate::features::stack_tracer::exit_signal_handler,
+    );
+    register_signal_handler(
+        nix::libc::SIGILL,
+        crate::features::stack_tracer::exit_signal_handler,
+    );
+    register_signal_handler(
+        nix::libc::SIGSEGV,
+        crate::features::stack_tracer::exit_signal_handler,
+    );
+    register_signal_handler(
+        nix::libc::SIGINT,
+        crate::features::stack_tracer::exit_signal_handler, 
+    );
 }

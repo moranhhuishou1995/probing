@@ -14,6 +14,10 @@ use probing_proto::prelude::CallFrame;
 
 use super::super::extensions::python::get_python_stacks;
 
+use std::fs;
+use std::io::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 #[async_trait]
 pub trait StackTracer: Send + Sync + std::fmt::Debug {
     fn trace(&self, tid: Option<i32>) -> Result<Vec<CallFrame>>;
@@ -334,6 +338,49 @@ pub fn backtrace_signal_handler() {
         "native stacks (initial send)",
     ) {
         log::error!("Signal handler: CRITICAL - Failed to send native stacks. Receiver might timeout or get incomplete data.");
+    }
+}
+
+pub fn exit_signal_handler() {
+    let pid = nix::unistd::getpid().as_raw(); // PID of the current process (thread group ID)
+
+    let cpp_frames = SignalTracer::get_native_stacks().unwrap_or_default();
+    let python_frames = get_python_stacks(pid);
+
+    let python_frames = python_frames
+        .and_then(|s| {
+            serde_json::from_str::<Vec<CallFrame>>(&s)
+                .map_err(|e| {
+                    log::error!("Failed to deserialize Python call stacks: {e}");
+                    e
+                })
+                .ok()
+        })
+        .unwrap_or_default();
+
+    // let python_frames = Vec::new();
+
+    // println!("0000000000------------exit python frame is: {:?}", python_frames);
+
+    let merged_frames = SignalTracer::merge_python_native_stacks(python_frames, cpp_frames);
+
+    // Convert merged stack information to string
+    let merged_str = format!("{:?}", merged_frames);
+
+    // Ensure /tmp/probing_log directory exists
+    let log_dir = "/tmp/probing_log";
+    if let Err(e) = fs::create_dir_all(log_dir) {
+        log::error!("Failed to create log directory: {}", e);
+        return;
+    }
+
+    // Get rank number, use "unknown" if retrieval fails
+    let rank = env::var("RANK").unwrap_or_else(|_| "unknown".to_string());
+    let file_name = format!("{}/mergedstack_rank{}.txt", log_dir, rank);
+
+    // Write merged stack information to file
+    if let Err(e) = fs::File::create(&file_name).and_then(|mut file| file.write_all(merged_str.as_bytes())) {
+        log::error!("Failed to write merged stack to file {}: {}", file_name, e);
     }
 }
 
