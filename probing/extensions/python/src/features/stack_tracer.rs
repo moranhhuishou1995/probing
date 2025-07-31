@@ -312,17 +312,18 @@ impl StackTracer for SignalTracer {
             return Err(anyhow::anyhow!(error_msg));
         }
         let python_frames = get_python_stacks(tid);
+        let python_frames = python_frames.unwrap();
 
-        let python_frames = python_frames
-            .and_then(|s| {
-                serde_json::from_str::<Vec<CallFrame>>(&s)
-                    .map_err(|e| {
-                        log::error!("Failed to deserialize Python call stacks: {e}");
-                        e
-                    })
-                    .ok()
-            })
-            .unwrap_or_default();
+        // let python_frames = python_frames
+        //     .and_then(|s| {
+        //         serde_json::from_str::<Vec<CallFrame>>(&s)
+        //             .map_err(|e| {
+        //                 log::error!("Failed to deserialize Python call stacks: {e}");
+        //                 e
+        //             })
+        //             .ok()
+        //     })
+        //     .unwrap_or_default();
         
         let cpp_frames = rx.recv_timeout(Duration::from_secs(2))?;
 
@@ -346,17 +347,18 @@ pub fn exit_signal_handler() {
 
     let cpp_frames = SignalTracer::get_native_stacks().unwrap_or_default();
     let python_frames = get_python_stacks(pid);
+    let python_frames = python_frames.unwrap();
 
-    let python_frames = python_frames
-        .and_then(|s| {
-            serde_json::from_str::<Vec<CallFrame>>(&s)
-                .map_err(|e| {
-                    log::error!("Failed to deserialize Python call stacks: {e}");
-                    e
-                })
-                .ok()
-        })
-        .unwrap_or_default();
+    // let python_frames = python_frames
+    //     .and_then(|s| {
+    //         serde_json::from_str::<Vec<CallFrame>>(&s)
+    //             .map_err(|e| {
+    //                 log::error!("Failed to deserialize Python call stacks: {e}");
+    //                 e
+    //             })
+    //             .ok()
+    //     })
+    //     .unwrap_or_default();
 
     // let python_frames = Vec::new();
 
