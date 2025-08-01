@@ -13,8 +13,10 @@ based on the PROBING environment variable:
                                       If PROBE_SETTING is omitted, it defaults to '0' (disabled after init).
 """
 
-import os
-import sys
+import sys, os, signal, traceback
+
+def global_except_hook(exc_type, exc_value, exc_tb):
+    os.kill(os.getpid(), signal.SIGUSR1)   # 或 SIGKILL
 
 
 def get_current_script_name():
@@ -45,7 +47,8 @@ def init_probing():
     try:
         # Remove the variable by default - we'll set it back if needed
         if "PROBING" in os.environ:
-            del os.environ["PROBING"]
+            sys.excepthook = global_except_hook
+            del os.environ["PROBING"]    
 
         if probe_value.lower() in ["1", "followed"]:
             print(
